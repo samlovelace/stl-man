@@ -67,7 +67,8 @@ int main(int argc, char* argv[])
     
     if(!parser->parse(filename))
     {
-        std::cerr << "Failed to parse " << filename << std::endl;  
+        std::cerr << "Failed to parse " << filename << std::endl; 
+        return 0;  
     }  
 
     printf("Successfully parsed %s in %4.3f sec\n", filename.c_str(), parser->tookHowLong());
@@ -115,14 +116,57 @@ int main(int argc, char* argv[])
     bool running = true; 
     SDL_Event event; 
     float angle = 0.0f; 
+    float zoom = -50.0f; 
+    float rotationX = 0.0f; 
+    float rotationY = 0.0f; 
+    bool mouseDragging = false; 
+    float lastMouseX = 0.0f; 
+    float lastMouseY = 0.0f; 
 
     while(running)
     {
         while(SDL_PollEvent(&event))
         {
-            if(event.type == SDL_QUIT)
+            if (event.type == SDL_QUIT) 
             {
-                running = false; 
+                running = false;
+            } 
+            else if (event.type == SDL_MOUSEBUTTONDOWN) 
+            {
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    mouseDragging = true;
+                    lastMouseX = event.button.x;
+                    lastMouseY = event.button.y;
+                }
+            } 
+            else if (event.type == SDL_MOUSEBUTTONUP) 
+            {
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    mouseDragging = false;
+                }
+            } 
+            else if (event.type == SDL_MOUSEMOTION) 
+            {
+                if (mouseDragging) {
+                    int dx = event.motion.x - lastMouseX;
+                    int dy = event.motion.y - lastMouseY;
+
+                    // Update rotation angles
+                    rotationX += dy * 0.5f; // Scale factor for sensitivity
+                    rotationY += dx * 0.5f;
+
+                    lastMouseX = event.motion.x;
+                    lastMouseY = event.motion.y;
+                }
+            }
+            
+            if (event.type == SDL_MOUSEWHEEL) 
+            {
+                if (event.wheel.y > 0) { // Scroll up
+                    zoom += 2.f;
+                } else if (event.wheel.y < 0) { // Scroll down
+                    zoom -= 2.f;
+                }
             }
         }
 
@@ -131,9 +175,10 @@ int main(int argc, char* argv[])
 
         // Set up the model-view matrix
         glLoadIdentity();
-        glTranslatef(0.0f, 0.0f, -55.0f); // Move back to see the cube
-        glRotatef(angle, 1.0f, 1.0f, 0.0f); // Rotate the model
-        angle += 0.5f; 
+        glTranslatef(0.0f, 0.0f, zoom); // Move back to see the cube
+        glRotatef(rotationX, 1.0f, 0.0f, 0.0f); // Rotate the model
+        glRotatef(rotationY, 0.0f, 1.0f, 0.0f); // Rotate the model
+        //angle += 0.5f; 
 
         if(&model)
         {
